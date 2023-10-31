@@ -1,0 +1,107 @@
+# Conventions:
+# - Always run code from inside the top-level directory.
+# - Paths are either absolute or relative to the top-level F2D folder.
+#   For example, "f2d/floorplan/data/he/xyz.json"
+
+simulation:
+  start_ts: !!timestamp '2010-11-17 13:12:11'  # Simulation start timestamp
+  duration:  # The simulation duration (additive; H hours + D days=24D+H hours)
+    hours: 0  # H
+    days: 30  # D
+  delta:  # The time-step for discrete time simulation (added)
+    seconds: 1
+    minutes: 0
+  # Integer specifying the factor by which to speed up the simulation. Higher
+  # value correspond to faster simulations. Example:
+  #   speedup: 1    (at wall clock speed)
+  #   speedup: 10   (10x speedup)
+  #   speedup: null (as fast as the sim can go)
+  speedup: null
+  # Global seed for reproducibility. Set to null for randomness.
+  seed: 4
+  visualization:
+    visualize: True  # Whether to create a visualization of the simulation
+    every_n_steps: 1  # Update visualization once every N steps (>=1)
+  show_progress: True  # Shows progress bar for the experiment
+  outputs:  # Saving the outputs of the simulation
+    save: True
+    every_n_steps: 1  # Saves outputs once every N steps of simulation.
+    output_dir: 'expt_data'
+    prefix: null  # String; assigns a name automatically if set to null.
+
+floorplan:
+  type: he  # Valid floorplan formats are: "he" (HouseExpo)
+  he:  # Config for HouseExpo floorplan format
+    # Path to the JSON HouseExpo config
+    json_fpath: "./src/f2d/floorplan/data/he/658e5214673c7a4e25b458e56bdb6144.json"
+    # Number of pixels per meter, which dictates floorplan resolution for viz
+    ppm: 20
+    border_pad: 1  # Padding in pixels around the boundary of the floorplan
+  
+# TODO: Consider having a "common" tuple for attributes common to different
+# entity types.
+users:
+  # names: ""  # Comma-separated list of user names
+  # names: "user0"  # Comma-separated list of user names
+  names: "user0,user1"  # Comma-separated list of user names
+  
+  user0:
+    type: base
+    base:  # Base entity class
+      radius: 0.2  # In meters
+
+      pose_config:
+        init_pose:
+          x: 8.0  # In meters
+          y: 3.0  # In meters
+          theta: 45  # In degrees
+        # Randomly meander from start position (toy strategy).
+        meander_strategy:
+          lin_speed: 0.1  # In meters per step
+          ang_speed: 15  # In degrees per step
+      color: blue
+  
+  user1:
+    type: base
+    base:  # Base entity class
+      radius: 0.2  # In meters
+      pose_config:  # TODO: Update pose config
+        init_pose:
+          x: 7.0  # In meters
+          y: 4.0  # In meters
+          theta: 150  # In degrees
+        # Randomly meander from start position (toy strategy).
+        meander_strategy:
+          lin_speed: 0.1  # In meters per step
+          ang_speed: 15  # In degrees per step
+      color: green
+
+robot:
+  type: base
+  base:  # Base robot class
+    radius: 0.1  # In meters
+    fov_config:  # Field of view
+      distance:  3.0  # In meters
+      angle: 108  # In degrees
+      # angle: 120  # In degrees
+      # Path to file containing pre-computed FoVs
+      # TODO: The FOV loading should be done via floorplan, since it's FP
+      # specific. The code and the config should be modified to enforce that.
+      #load_fov_file: "./fov_cache_150m2.pickle"
+      #load_fov_file: "./fov_cache_SampleRealWorld.pickle"
+      #load_fov_file: "./fov_cache_Sara.pickle"
+      load_fov_file: 'expt_data/fov_data_658e5214673c7a4e25b458e56bdb6144_v2.pickle'
+      # load_fov_file: 'expt_data/fov_data_658e5214673c7a4e25b458e56bdb6144_v1.pickle'
+      # load_fov_file: 'expt_data/fov_data_658e5214673c7a4e25b458e56bdb6144.pickle'
+      lazy_compute: True  # Compute FOVs on the fly (else beforehand)
+    pose_config:
+      init_pose:
+        x: 4.0  # In meters
+        y: 2.0  # In meters
+        theta: 45  # In degrees
+      # Randomly meander from start position (toy strategy).
+      meander_strategy:
+        lin_speed: 0.1  # In meters per step
+        ang_speed: 15  # In degrees per step
+    color: red
+
