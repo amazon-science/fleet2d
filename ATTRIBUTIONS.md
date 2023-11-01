@@ -1,6 +1,6 @@
-# PTB Attributiuons
+# Fleet2D Attributions
 
-The PTB  includes the following third-party software/licensing:
+Fleet2D includes the following third-party software/licensing:
 
 ## Licenses
 
