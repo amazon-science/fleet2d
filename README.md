@@ -31,7 +31,7 @@ Once there, export the path for Python to be able to recognize the freshly built
 ```
 export PYTHONPATH=`pwd`
 ```
-Then go back to your original workspace directory (`cd -` should work). You're now ready to run the test bed!
+Then go back to your original workspace directory (`cd -` should work). You're now ready to run the simulator!
 
 ### Run simulation
 To run the simulation using the config file located at `src/f2d/configs/config_simple.yaml` enter the following command from the package home directory:
