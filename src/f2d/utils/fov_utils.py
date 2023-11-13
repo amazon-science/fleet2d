@@ -2,10 +2,12 @@ import collections
 import functools
 import itertools
 import math
+from collections.abc import MutableMapping
 
 import numpy as np
 import sortedcontainers
 from matplotlib import pyplot as plt
+from mpmath import iv
 
 from f2d.utils.fov_utils_cpp import get_closest_point as get_closest_point_cpp
 
@@ -40,7 +42,9 @@ class Point(_Point):
 
 
 def is_same_point(point_a, point_b):
-    return math.isclose(point_a.x, point_b.x, abs_tol=0.1) and math.isclose(point_a.y, point_b.y, abs_tol=0.1)
+    return math.isclose(point_a.x, point_b.x, abs_tol=0.1) and math.isclose(
+        point_a.y, point_b.y, abs_tol=0.1
+    )
 
 
 _Segment = collections.namedtuple("Segment", "a b")
@@ -50,7 +54,14 @@ class Segment(_Segment):
     """A line segment from Point a to Point b."""
 
     def draw(self, ax, mpl_str="k", arrows=True, arrow_width=0.01):
-        return draw_pts(self, ax, loop=False, mpl_str=mpl_str, arrows=arrows, arrow_width=arrow_width)
+        return draw_pts(
+            self,
+            ax,
+            loop=False,
+            mpl_str=mpl_str,
+            arrows=arrows,
+            arrow_width=arrow_width,
+        )
 
     def get_points(self):
         return [self.a, self.b]
@@ -74,12 +85,81 @@ class Polygon(list):
         return [Segment(p_a, p_b) for p_a, p_b in zip(self, self[1:] + [self[0]])]
 
     def draw(self, ax, mpl_str="k", arrows=True, arrow_width=0.01):
-        return draw_pts(self, ax, loop=True, mpl_str=mpl_str, arrows=arrows, arrow_width=arrow_width)
+        return draw_pts(
+            self, ax, loop=True, mpl_str=mpl_str, arrows=arrows, arrow_width=arrow_width
+        )
 
     @staticmethod
     def get_rectangle(x_min, x_max, y_min, y_max):
         """Convenience method to construct a simple rectangle Polygon instance."""
-        return Polygon([Point(x_min, y_min), Point(x_min, y_max), Point(x_max, y_max), Point(x_max, y_min)])
+        return Polygon(
+            [
+                Point(x_min, y_min),
+                Point(x_min, y_max),
+                Point(x_max, y_max),
+                Point(x_max, y_min),
+            ]
+        )
+
+
+class IntervalMap(MutableMapping):
+    """
+    Very simple, O(n) implementation of an interval map. This map can be improved later if needed
+    by using a more complex but faster bounds-based approach.
+
+    For this faster case, the central idea is to use an array to store values in a sequential order.
+    Then use a dict to store a mapping of  bounds of the intervals given to the index in the values
+    array that holds the corresponding value. For example, [0:3] => 'a', [4:7] => 'b' would result
+    in a values array [None, 'a', 'b', None] and an upper bound dict of {3 => 1, 7 => 2} and a lower
+    bound dict of {0 => 1, 4 => 2}. Then a query of 2 would result in the upper bound dict being
+    searched for the key that is equal to or greater than 2, and the lower bound dict being searched
+    for the key that is equal to or less than 2, which yields 3 and 0 respectively which point to the
+    second element 'a'.
+
+    If the query was 8, then the upper bound would fail, and a None value returned. Similarly for -1.
+
+    In cases of gaps, for example [0:3] => 'a', [7:8] => 'b', the values array would look like [None,
+    'a', None, 'b', None]. The upper bound dict would be {3 => 1, 8 => 3}, lower bound would be {0 =>
+    1, 7 => 3}. Now, a query of 5 would result in the closest being 8 on the upper, and 0 on the lower.
+    Since they disagree the interval is not defined and None is returned.
+
+    """
+
+    def __init__(self):
+        self._keys = []
+        self._values = []
+
+    def __getitem__(self, key):
+        for i, k in enumerate(self._keys):
+            if key in k:
+                return self._values[i]
+        print("Key {} not found in {}".format(key, self._keys))
+        return None
+
+    def __setitem__(self, key, value):
+        for i, k in enumerate(self._keys):
+            if key in k:
+                raise ValueError(
+                    "Key overlap found between {} when attempting to set {}".format(
+                        k, key
+                    )
+                )
+        self._keys.append(key)
+        self._values.append(value)
+
+    def __delitem__(self, key):
+        for i, k in enumerate(self._keys):
+            if key in k:
+                remove_idx = i
+                break
+        del self._keys[i]
+        del self._values[i]
+
+    def __iter__(self):
+        return iter(self._keys)
+
+    def __len__(self):
+        return len(self._keys)
 
 
 """
@@ -101,7 +181,14 @@ def draw_pts(pts, ax, loop=False, mpl_str="k", arrows=False, arrow_width=0.01):
     y = np.array(y)
     if arrows:
         quiver = ax.quiver(
-            x[:-1], y[:-1], x[1:] - x[:-1], y[1:] - y[:-1], scale_units="xy", angles="xy", scale=1, width=arrow_width
+            x[:-1],
+            y[:-1],
+            x[1:] - x[:-1],
+            y[1:] - y[:-1],
+            scale_units="xy",
+            angles="xy",
+            scale=1,
+            width=arrow_width,
         )
         return quiver
     lines = ax.plot(x, y, mpl_str)
@@ -193,13 +280,19 @@ def get_distance_vec(pts_array, pt_or_pts):
 
 def get_ray(origin, theta, length):
     """Returns segment starting at origin with slope theta and of given length."""
-    dest = Point(origin.x + length * np.cos(np.deg2rad(theta)), origin.y + length * np.sin(np.deg2rad(theta)))
+    dest = Point(
+        origin.x + length * np.cos(np.deg2rad(theta)),
+        origin.y + length * np.sin(np.deg2rad(theta)),
+    )
     return Segment(origin, dest)
 
 
 def get_bbox(seg):
     """Returns bbox containing the segment."""
-    return [Point(min(seg.a.x, seg.b.x), min(seg.a.y, seg.b.y)), Point(max(seg.a.x, seg.b.x), max(seg.a.y, seg.b.y))]
+    return [
+        Point(min(seg.a.x, seg.b.x), min(seg.a.y, seg.b.y)),
+        Point(max(seg.a.x, seg.b.x), max(seg.a.y, seg.b.y)),
+    ]
 
 
 def bbox_overlap_py(seg_12, seg_34):
@@ -310,11 +403,14 @@ class VisibilityPolygonComputation(object):
         source, segments = self.source, self.segments
         #  Get closest point and dist of each segment to the source
         segment_to_attrs = {
-            s: {"nearest_point": get_nearest_point(s, source), "idx": idx} for idx, s in enumerate(segments)
+            s: {"nearest_point": get_nearest_point(s, source), "idx": idx}
+            for idx, s in enumerate(segments)
         }
         for s, attrs in segment_to_attrs.items():
             # Compute distance to the nearest point
-            segment_to_attrs[s]["np_distance"] = get_distance(source, attrs["nearest_point"])
+            segment_to_attrs[s]["np_distance"] = get_distance(
+                source, attrs["nearest_point"]
+            )
         self.segment_to_attrs = segment_to_attrs
 
     def build_visibility_polygon(self):
@@ -331,7 +427,9 @@ class VisibilityPolygonComputation(object):
             angles = map(angle_in_range, angles)
             for angle in angles:
                 ray = get_ray(self.source, angle, max_dist)
-                closest_point, cur_seg_idx = self._get_closest_pt(ray, prev_seg_indices[-1])
+                closest_point, cur_seg_idx = self._get_closest_pt(
+                    ray, prev_seg_indices[-1]
+                )
                 if cur_seg_idx == prev_seg_indices[-1] == prev_seg_indices[-2]:
                     polygon_vertices.pop()
                     polygon_thetas.pop()
@@ -339,7 +437,9 @@ class VisibilityPolygonComputation(object):
                     prev_seg_indices = [prev_seg_indices[-1], cur_seg_idx]
                 polygon_vertices.append(closest_point)
                 polygon_thetas.append(angle)
-        self.vis_polygon = VisibilityPolygon(self.source, polygon_vertices, thetas=polygon_thetas)
+        self.vis_polygon = VisibilityPolygon(
+            self.source, polygon_vertices, thetas=polygon_thetas
+        )
 
     def _get_longest_ray_upper_bound(self):
         """Returns upper bound on the distance between source and the vertices."""
@@ -355,8 +455,12 @@ class VisibilityPolygonComputation(object):
         return self._get_closest_pt_cpp(ray_from_src, prev_seg_idx)
 
     def _validate_get_closest_pt(self, ray_from_src, prev_seg_idx):
-        closest_pt_py, best_seg_idx_py = self._get_closest_pt_py(ray_from_src, prev_seg_idx)
-        closest_pt_cpp, best_seg_idx_cpp = self._get_closest_pt_cpp(ray_from_src, prev_seg_idx)
+        closest_pt_py, best_seg_idx_py = self._get_closest_pt_py(
+            ray_from_src, prev_seg_idx
+        )
+        closest_pt_cpp, best_seg_idx_cpp = self._get_closest_pt_cpp(
+            ray_from_src, prev_seg_idx
+        )
         if best_seg_idx_py != best_seg_idx_cpp:
             print("Index {} vs {}".format(best_seg_idx_py, best_seg_idx_cpp))
         assert best_seg_idx_py == best_seg_idx_cpp
@@ -375,7 +479,9 @@ class VisibilityPolygonComputation(object):
             segments = self.segments
         else:
             segments = itertools.chain(
-                [self.segments[prev_seg_idx]], self.segments[:prev_seg_idx], self.segments[prev_seg_idx + 1 :]
+                [self.segments[prev_seg_idx]],
+                self.segments[:prev_seg_idx],
+                self.segments[prev_seg_idx + 1 :],
             )
 
         # We search through all segments (no particular order required) to find the
@@ -428,7 +534,11 @@ class VisibilityPolygonComputation(object):
         # We get to this function once we know the segments do not lie on the same
         # side of each other. Thus, they are collinear or they intersect.
         def get_seg_vars(seg):
-            return (seg.a.y - seg.b.y), (seg.b.x - seg.a.x), (seg.b.x * seg.a.y - seg.a.x * seg.b.y)
+            return (
+                (seg.a.y - seg.b.y),
+                (seg.b.x - seg.a.x),
+                (seg.b.x * seg.a.y - seg.a.x * seg.b.y),
+            )
 
         source_v = get_seg_vars(source_seg)
         other_v = get_seg_vars(other_seg)
@@ -487,8 +597,6 @@ class VisibilityPolygon(Polygon):
         return [get_theta(pt - self.source) for pt in vertices]
 
     def _build_cache(self):
-        # Dict mapping from theta intervals to segment attributes.
-        cache = {}
         # The segment crossing our range boundary at 180 can cause issues when
         # trying to fetch the segment for a theta. We explicitly take care of this.
         thetas_start = itertools.chain([-180], self.thetas)
@@ -496,19 +604,19 @@ class VisibilityPolygon(Polygon):
         vertices_start = itertools.chain([self[-1]], self)
         vertices_end = itertools.chain(self, [self[0]])
 
-        # Populate the cache with segment attributes.
+        # Dict mapping from theta intervals to segment attributes.
+        cache = IntervalMap()
+
+        # Populate the cache with segment attributes. The cache is valid for a set
+        # of angles within the given interval
         iterable = zip(thetas_start, thetas_end, vertices_start, vertices_end)
         for theta_min, theta_max, vertex_min, vertex_max in iterable:
-            theta_interval = (theta_min, theta_max)  # [x, y)
-            if theta_interval.empty:
+            theta_interval = iv.mpf([theta_min, theta_max])  # [x, y)
+            if theta_min >= theta_max - 0.01:
                 # Skip segments directed at the source.
                 # TODO: Re-evaluate if this is reasonable as we will miss some edges.
                 continue
             cache[theta_interval] = self._get_segment_attrs(vertex_min, vertex_max)
-
-        # Validate that the cache keys cover [-180, 180)
-        cache_support = functools.reduce(lambda x, y: x | y, cache.keys())
-        assert cache_support == (-180, 180)
 
         self._cache = cache
 
@@ -545,12 +653,15 @@ class VisibilityPolygon(Polygon):
             return False
         # Check with appropriate segment
         segment_attrs = self._cache[pt_theta]
+
         if dist_from_source <= segment_attrs["accept_distance"]:
             return True
         if dist_from_source > segment_attrs["reject_distance"]:
             return False
         # We check if both the source and the point lie on the same side of the line
-        return segment_attrs["source_sign"] == get_sign_from_attrs(segment_attrs, user_pt)
+        return segment_attrs["source_sign"] == get_sign_from_attrs(
+            segment_attrs, user_pt
+        )
 
     def points_in_vp(self, points_arr, fov_dist):
         """Returns indices of points in VP and within 360-FoV in interval dict.
@@ -582,7 +693,9 @@ class VisibilityPolygon(Polygon):
             segment = self._cache[theta]
             if dist[pt_idx] > segment["reject_distance"]:
                 continue
-            if dist[pt_idx] <= segment["accept_distance"] or get_sign_from_attrs(segment, pt):
+            if dist[pt_idx] <= segment["accept_distance"] or get_sign_from_attrs(
+                segment, pt
+            ):
                 # Add index of point to the list corresponding to theta.
                 theta_to_point_indices.setdefault(theta, [])
                 theta_to_point_indices[theta].append(pt_idx)
