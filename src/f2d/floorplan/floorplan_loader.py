@@ -1,9 +1,7 @@
 from f2d.floorplan import he_floorplan
 
 # Supported floorplan classes for initialization. Add class here after defining below.
-FLOORPLAN_CLASSES = {
-    "he": he_floorplan.HouseExpoFloorplan
-}
+FLOORPLAN_CLASSES = {"he": he_floorplan.HouseExpoFloorplan}
 
 
 def get_floorplan(fp_config_dict):

@@ -39,7 +39,9 @@ class Simulation(object):
             self.wall_time_per_step = None
         else:
             sim_time_per_step_in_seconds = self.sim_delta.total_seconds()
-            self.wall_time_per_step = sim_time_per_step_in_seconds / self.speedup  # In seconds
+            self.wall_time_per_step = (
+                sim_time_per_step_in_seconds / self.speedup
+            )  # In seconds
 
         # Get randomizer for reproducibility.
         self.randomizer = utils.get_randomizer(self.seed)
@@ -50,8 +52,12 @@ class Simulation(object):
         self.fp = floorplan_loader.get_floorplan(self.config["floorplan"])
 
         # TODO: Create robot and user objects here, instead of in reset? Then only reset them there?
-        self.users = user_loader.get_users(self.config["users"], self.fp, self.randomizer)
-        self.robot = robot_loader.get_robot(self.config["robot"], self.fp, self.randomizer)
+        self.users = user_loader.get_users(
+            self.config["users"], self.fp, self.randomizer
+        )
+        self.robot = robot_loader.get_robot(
+            self.config["robot"], self.fp, self.randomizer
+        )
         user_names = list(self.users.keys())
 
     def reset(self):
@@ -107,7 +113,10 @@ class Simulation(object):
         with tqdm.tqdm(total=self._max_sim_steps, disable=disable_tqdm) as pbar:
             while not self.state["sim_complete"]:
                 self.step()
-                if self.save_outputs and self.state["sim_steps"] % self.save_every_n_steps == 0:
+                if (
+                    self.save_outputs
+                    and self.state["sim_steps"] % self.save_every_n_steps == 0
+                ):
                     pass
                 pbar.update(1)
                 if self.wall_time_per_step:

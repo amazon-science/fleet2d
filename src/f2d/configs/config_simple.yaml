@@ -20,12 +20,12 @@ simulation:
   # Global seed for reproducibility. Set to null for randomness.
   seed: 4
   visualization:
-    visualize: True  # Whether to create a visualization of the simulation
+    visualize: False  # Whether to create a visualization of the simulation
     every_n_steps: 1  # Update visualization once every N steps (>=1)
   show_progress: True  # Shows progress bar for the experiment
   outputs:  # Saving the outputs of the simulation
     save: True
-    every_n_steps: 1  # Saves outputs once every N steps of simulation.
+    every_n_steps: 3600  # Saves outputs once every N steps of simulation.
     output_dir: 'expt_data'
     prefix: null  # String; assigns a name automatically if set to null.
 

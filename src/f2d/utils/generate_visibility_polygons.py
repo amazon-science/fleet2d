@@ -45,7 +45,9 @@ explorable_indices = np.where(robot.explorable_mask)
 start_time = time.time()
 vp_map = {}
 fp_polygon = get_fp_polygon(robot.fp_obj.fp_polygon)
-for source in tqdm.tqdm(list(zip(*explorable_indices))):  # 2677s (v0)  # 1635s (v1)  # s (v2)
+for source in tqdm.tqdm(
+    list(zip(*explorable_indices))
+):  # 2677s (v0)  # 1635s (v1)  # s (v2)
     x, y = float(source[1]), float(source[0])
     vp_obj = fov_utils.VisibilityPolygonComputation(fov_utils.Point(x, y), [fp_polygon])
     vp_obj.build_visibility_polygon()

@@ -24,7 +24,9 @@ def get_values(dict_of_lists):
     return list(itertools.chain(*dict_of_lists.values()))
 
 
-def parallel_map(func, list_of_args, nprocs=None, chunksize=100, progress=True, use_pathos=True):
+def parallel_map(
+    func, list_of_args, nprocs=None, chunksize=100, progress=True, use_pathos=True
+):
     """Executes function for list of args in parallel across multiple processes.
 
     Args:

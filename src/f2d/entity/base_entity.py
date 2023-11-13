@@ -114,7 +114,9 @@ class Entity(object):
 
 
 class Robot(Entity):
-    def __init__(self, fp_obj, radius=None, pose_config=None, fov_config=None, **kwargs):
+    def __init__(
+        self, fp_obj, radius=None, pose_config=None, fov_config=None, **kwargs
+    ):
         super().__init__(fp_obj, radius=radius, pose_config=pose_config, **kwargs)
         # Longer arrow for robot to distinguish easily.
         self.viz_arrow_length = 3 * self.diameter_p
@@ -143,7 +145,9 @@ class Robot(Entity):
         self.user_poses = collections.OrderedDict(
             [
                 (un, pose if is_pt_vis else None)
-                for un, pose, is_pt_vis in zip(users.keys(), fov_poses, poses_visibility)
+                for un, pose, is_pt_vis in zip(
+                    users.keys(), fov_poses, poses_visibility
+                )
             ]
         )
 
@@ -154,7 +158,10 @@ class Robot(Entity):
     def check_visibility(self, poses):
         """Returns list of bools indicating if poses are visible from the robot."""
         vp = self.get_vis_polygon()
-        poses_visibility = [vp.point_in_fov(pose, self.pose, self.fov_dist, self.fov_angle) for pose in poses]
+        poses_visibility = [
+            vp.point_in_fov(pose, self.pose, self.fov_dist, self.fov_angle)
+            for pose in poses
+        ]
         return poses_visibility
 
     def _build_fov_map(self, lazy=True):
@@ -183,14 +190,18 @@ class Robot(Entity):
                     for source in tqdm.tqdm(list(zip(*explorable_indices))):
                         x, y = float(source[1]), float(source[0])
                         # TODO: Do we need the bbox at all?
-                        self._vp_map[(x, y)] = fov_utils.get_visibility_polygon(x, y, [self.fp_polygon])
+                        self._vp_map[(x, y)] = fov_utils.get_visibility_polygon(
+                            x, y, [self.fp_polygon]
+                        )
                     # Save vp map
                     with open(fpath, "wb") as handle:
                         pickle.dump(self._vp_map, handle)
 
         # TODO: Change floorplan class so fp_polygon already comes in this format,
         # obviating the transformation below.
-        self.fp_polygon = fov_utils.Polygon([fov_utils.Point(v[0], v[1]) for v in self.fp_obj.fp_polygon])
+        self.fp_polygon = fov_utils.Polygon(
+            [fov_utils.Point(v[0], v[1]) for v in self.fp_obj.fp_polygon]
+        )
 
         # Compute FoV for all indices
         if lazy:
@@ -200,7 +211,9 @@ class Robot(Entity):
         for source in zip(*explorable_indices):
             x, y = float(source[1]), float(source[0])
             # TODO: Do we need the bbox at all?
-            self.vp_map[(x, y)] = fov_utils.get_visibility_polygon(x, y, [self.fp_polygon])
+            self.vp_map[(x, y)] = fov_utils.get_visibility_polygon(
+                x, y, [self.fp_polygon]
+            )
 
     def get_vis_polygon(self, xy=None):
         """Returns the visibility polygon at the given (or the robot's) position."""
@@ -278,5 +291,3 @@ def _is_explorable(x, y, explorable_mask):
     if x >= width or y >= height:
         return False
     return explorable_mask[int(y), int(x)]
-
-

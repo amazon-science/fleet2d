@@ -57,16 +57,22 @@ class HouseExpoFloorplan(base_floorplan.Floorplan):
                     np.min([bbox_xy_max[1], self.fp_mask.shape[0]]),
                 ]
 
-                room_name = base_floorplan.Floorplan.get_next_room_name(room_type, self.room_masks.keys())
+                room_name = base_floorplan.Floorplan.get_next_room_name(
+                    room_type, self.room_masks.keys()
+                )
                 room_mask = np.zeros_like(self.fp_mask)
                 room_mask[bbox[1] : bbox[3], bbox[0] : bbox[2]] = True
                 room_mask &= self.fp_mask
-                room_mask = _get_largest_component(room_mask)  # If disjoint mask due to approximation
+                room_mask = _get_largest_component(
+                    room_mask
+                )  # If disjoint mask due to approximation
                 self.room_masks[room_name] = room_mask
 
         # [3b]: Clean up the masks by removing overlapping regions, going from smallest
         # to biggest room.
-        room_masks_ordered = sorted(list(self.room_masks.items()), key=lambda x: x[1].sum())
+        room_masks_ordered = sorted(
+            list(self.room_masks.items()), key=lambda x: x[1].sum()
+        )
         room_masks_ordered = [list(e) for e in room_masks_ordered]
         # For each room i, remove its area from all larger rooms.
         for i, (room_name, room_mask) in enumerate(room_masks_ordered):
@@ -156,7 +162,9 @@ def _get_room_type(he_room_type):
 
 def _get_largest_component(mask):
     components = measure.label(mask)
-    largest_component = components == np.argmax(np.bincount(components.flat, weights=mask.flat))
+    largest_component = components == np.argmax(
+        np.bincount(components.flat, weights=mask.flat)
+    )
     return largest_component
 
 

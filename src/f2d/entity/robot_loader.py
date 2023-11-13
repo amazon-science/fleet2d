@@ -19,5 +19,3 @@ def get_robot(robot_config_dict, fp_obj, randomizer=None):
         seed = utils.get_seed(randomizer)
         robot_config_dict["seed"] = seed
     return ROBOT_CLASSES[robot_type](fp_obj, **robot_config_dict)
-
-

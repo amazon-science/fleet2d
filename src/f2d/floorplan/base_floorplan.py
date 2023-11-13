@@ -1,5 +1,13 @@
 # Supported room types.
-ROOM_TYPES = ["bedroom", "kitchen", "bathroom", "living_room", "dining_room", "hallway", "unknown"]  # All-capture class
+ROOM_TYPES = [
+    "bedroom",
+    "kitchen",
+    "bathroom",
+    "living_room",
+    "dining_room",
+    "hallway",
+    "unknown",
+]  # All-capture class
 KNOWN_ROOM_TYPES, UNKNOWN_ROOM_TYPE = ROOM_TYPES[:-1], ROOM_TYPES[-1]
 
 
