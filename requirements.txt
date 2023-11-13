@@ -1,0 +1,12 @@
+numpy~=1.21
+opencv-python~=4.6.0
+matplotlib~=3.6.2
+scikit-image~=0.19.3
+tqdm~=4.64.1
+PyYAML~=6.0
+sortedcontainers~=2.4.0
+pytest~=7.2.0
+pathos~=0.3.0
+setuptools~=63.4.3
+pytest-cov~=4.0.0
+mpmath~=1.2.1
